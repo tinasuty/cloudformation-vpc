@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: A sample template
+Resources:
+  TCSVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+      - Key: Name
+        Value: TSCVPC
+
+  TCSInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: TCS-IGW
+
+  TCSAttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: TCSVPC
+      InternetGatewayId:
+        Ref: TCSInternetGateway
+
+  TCSPUBSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: TCSVPC
+      CidrBlock: 10.0.0.0/24
+      AvailabilityZone: "us-east-1a"
+      MapPublicIpOnLaunch: "true"
+      Tags:
+      - Key: Name
+        Value: TCS-subnet-public
+
+  TCSPVTSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: TCSVPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: "us-east-1b"
+      MapPublicIpOnLaunch: "false"
+      Tags:
+      - Key: Name
+        Value: TCS-subnet-private
+
+  TCSPUBRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:  
+        Ref: TCSVPC
+      Tags:
+      - Key: Name
+        Value: TCS-RT-PUB
+  TCSPVTRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:  
+        Ref: TCSVPC
+      Tags:
+      - Key: Name
+        Value: TCS-RT-PVT     
+
+  TCSIGWRoute:
+    Type: AWS::EC2::Route
+    DependsOn: TCSAttachGateway
+    Properties:
+       RouteTableId:
+         Ref: TCSPUBRouteTable
+       DestinationCidrBlock: 0.0.0.0/0
+       GatewayId:
+         Ref: TCSInternetGateway      
+
+  TCSPUBSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: TCSPUBSubnet
+      RouteTableId:
+        Ref: TCSPUBRouteTable  
+
+  TCSPVTSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: TCSPVTSubnet
+      RouteTableId:
+        Ref: TCSPVTRouteTable            
